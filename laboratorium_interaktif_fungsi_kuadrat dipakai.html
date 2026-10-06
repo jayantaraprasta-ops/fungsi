@@ -1,0 +1,1792 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorium Interaktif Fungsi Kuadrat</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- KaTeX for mathematical notation rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            800: '#0B192C',
+                            900: '#070F1E',
+                            950: '#030712'
+                        },
+                        royal: {
+                            500: '#2563EB',
+                            600: '#1D4ED8',
+                            700: '#1E40AF'
+                        },
+                        accent: {
+                            gold: '#F59E0B',
+                            emerald: '#10B981',
+                            cyan: '#06B6D4'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Glassmorphism Effects */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(229, 231, 235, 0.8);
+        }
+        .dark .glass-panel, .glass-panel-dark {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: 380px;
+            background: radial-gradient(circle at center, #ffffff 0%, #f8fafc 100%);
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+        }
+        /* Grid Canvas Styling */
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        /* Animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        .animate-float {
+            animation: float 4s ease-in-out infinite;
+        }
+        .active-tab {
+            border-left: 4px solid #2563EB;
+            background-color: #EFF6FF;
+            color: #1D4ED8;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col selection:bg-blue-200 selection:text-blue-900">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-navy-800 text-white shadow-lg sticky top-0 z-50 border-b border-navy-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="navigateTo('cover')">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center text-white font-bold text-xl shadow-md">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-base sm:text-lg leading-tight text-white tracking-wide">LABORATORIUM PARABOLA</h1>
+                    <p class="text-xs text-blue-300 hidden sm:block">SMA Negeri 1 Purwantoro • Praphastha Jayantara, S.Pd.</p>
+                </div>
+            </div>
+
+            <!-- Global Navigation & Progress Bar -->
+            <div class="flex items-center space-x-4">
+                <div class="hidden md:flex items-center space-x-2 bg-navy-900/60 px-3 py-1.5 rounded-full border border-blue-500/30">
+                    <span class="text-xs text-blue-200 font-medium">Kemajuan:</span>
+                    <div class="w-24 bg-slate-700 h-2.5 rounded-full overflow-hidden">
+                        <div id="globalProgressBar" class="bg-gradient-to-r from-blue-400 to-emerald-400 h-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <span id="globalProgressText" class="text-xs font-bold text-cyan-300">0%</span>
+                </div>
+
+                <button onclick="toggleDashboardMenu()" class="p-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm flex items-center space-x-2 transition shadow">
+                    <i class="fa-solid fa-map"></i>
+                    <span class="hidden sm:inline">Peta Modul</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Overlay / Modal -->
+    <div id="navModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden transition-opacity flex justify-end">
+        <div class="bg-white w-full max-w-md h-full shadow-2xl flex flex-col p-6 overflow-y-auto">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-200">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800">Peta Perjalanan Belajar</h3>
+                    <p class="text-xs text-slate-500">Pilih modul untuk langsung mengeksplorasi</p>
+                </div>
+                <button onclick="toggleDashboardMenu()" class="text-slate-400 hover:text-slate-600 text-xl p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-2 mt-4 flex-1" id="moduleMenuList">
+                <!-- Dynamically Populated by JS -->
+            </div>
+
+            <div class="pt-4 border-t border-slate-200 bg-slate-50 rounded-xl p-3 mt-4">
+                <div class="flex justify-between text-xs text-slate-600 mb-1">
+                    <span>Lencana Terkumpul</span>
+                    <span id="badgeCountText" class="font-bold text-blue-600">0 / 7</span>
+                </div>
+                <div id="badgeMiniIcons" class="flex space-x-2 text-slate-300 text-base">
+                    <i class="fa-solid fa-shield-halved" title="Penakluk Akar"></i>
+                    <i class="fa-solid fa-crosshair" title="Pemburu Titik Puncak"></i>
+                    <i class="fa-solid fa-chart-area" title="Ahli Grafik"></i>
+                    <i class="fa-solid fa-sliders" title="Master Koefisien"></i>
+                    <i class="fa-solid fa-magnifying-glass" title="Detektif Parabola"></i>
+                    <i class="fa-solid fa-lightbulb" title="Ahli Literasi Numerasi"></i>
+                    <i class="fa-solid fa-crown text-amber-400" title="Master Parabola"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN VIEW CONTAINER -->
+    <main id="mainContainer" class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 flex flex-col">
+        <!-- Content will be swapped dynamically by router -->
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-navy-900 text-slate-400 text-xs py-4 px-6 border-t border-navy-800 mt-auto">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2 text-center sm:text-left">
+            <div>
+                <p class="font-semibold text-slate-300">LABORATORIUM INTERAKTIF FUNGSI KUADRAT</p>
+                <p class="text-slate-500">Dikembangkan oleh Praphastha Jayantara, S.Pd. • SMAN 1 Purwantoro</p>
+            </div>
+            <div class="text-slate-500 italic">
+                "Ubah Persamaan, Amati Grafik, Temukan Polanya!"
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // GLOBAL APPLICATION STATE
+        const appState = {
+            currentModule: 'cover', // 'cover', 'dashboard', 'm1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7', 'm8', 'm9', 'playground'
+            progress: {
+                m1: false, m2: false, m3: false, m4: false, m5: false, m6: false, m7: false, m8: false, m9: false
+            },
+            score: {
+                m1: 0,
+                m7: 0,
+                m8: 0,
+                m9: 0
+            },
+            badges: {
+                akar: false,
+                puncak: false,
+                grafik: false,
+                koefisien: false,
+                detektif: false,
+                literasi: false,
+                master: false
+            },
+            m1Answers: {},
+            m7Answers: {},
+            m8Answers: {},
+            m9Answers: {}
+        };
+
+        // MODULE METADATA LIST
+        const modulesList = [
+            { id: 'm1', code: '01', title: 'PEMANASAN', subtitle: 'Akar-Akar Persamaan Kuadrat', icon: 'fa-bolt' },
+            { id: 'm2', code: '02', title: 'EKSPLORASI', subtitle: 'Mengenal Grafik Fungsi Kuadrat', icon: 'fa-wave-square' },
+            { id: 'm3', code: '03', title: 'MEMBANGUN PARABOLA', subtitle: 'Dari Informasi Yang Diketahui', icon: 'fa-cubes' },
+            { id: 'm4', code: '04', title: 'LABORATORIUM KOEFISIEN', subtitle: 'Mengubah Koefisien a, b, c', icon: 'fa-sliders' },
+            { id: 'm5', code: '05', title: 'LABORATORIUM PERGESERAN', subtitle: 'Translasi Bentuk Puncak (h, k)', icon: 'fa-arrows-up-down-left-right' },
+            { id: 'm6', code: '06', title: 'TANTANGAN GRAFIK', subtitle: 'Membaca & Menganalisis Grafik', icon: 'fa-eye' },
+            { id: 'm7', code: '07', title: 'LITERASI NUMERASI', subtitle: 'Fungsi Kuadrat Dalam Kehidupan', icon: 'fa-earth-americas' },
+            { id: 'm8', code: '08', title: 'LATIHAN TERSTRUKTUR', subtitle: 'Soal Bertingkat (Level 1 - 3)', icon: 'fa-pen-ruler' },
+            { id: 'm9', code: '09', title: 'KUIS AKHIR', subtitle: 'Misi Menaklukkan Parabola', icon: 'fa-trophy' }
+        ];
+
+        // MATHEMATICS UTILITY ENGINE
+        function calcQuadratic(a, b, c) {
+            a = parseFloat(a) || 0.0001;
+            b = parseFloat(b) || 0;
+            c = parseFloat(c) || 0;
+
+            const D = (b * b) - (4 * a * c);
+            const h = -b / (2 * a);
+            const k = -D / (4 * a);
+
+            let roots = [];
+            if (D > 0) {
+                const r1 = (-b + Math.sqrt(D)) / (2 * a);
+                const r2 = (-b - Math.sqrt(D)) / (2 * a);
+                roots = [Math.min(r1, r2), Math.max(r1, r2)];
+            } else if (Math.abs(D) < 0.000001) {
+                roots = [h];
+            }
+
+            const openUp = a > 0;
+            const vertexType = openUp ? "Minimum" : "Maksimum";
+
+            return {
+                a, b, c, D, h, k,
+                roots,
+                hasRealRoots: roots.length > 0,
+                numRoots: roots.length,
+                yIntercept: c,
+                openUp,
+                vertexType,
+                formattedEq: formatEquation(a, b, c)
+            };
+        }
+
+        function formatEquation(a, b, c) {
+            let res = "y = ";
+            if (a === 1) res += "x²";
+            else if (a === -1) res += "-x²";
+            else res += `${a}x²`;
+
+            if (b > 0) res += ` + ${b === 1 ? '' : b}x`;
+            else if (b < 0) res += ` - ${Math.abs(b) === 1 ? '' : Math.abs(b)}x`;
+
+            if (c > 0) res += ` + ${c}`;
+            else if (c < 0) res += ` - ${Math.abs(c)}`;
+
+            return res;
+        }
+
+        // HIGH PERFORMANCE PARABOLA CANVAS RENDERER
+        class ParabolaRenderer {
+            constructor(canvasId, options = {}) {
+                this.canvas = document.getElementById(canvasId);
+                if (!this.canvas) return;
+                this.ctx = this.canvas.getContext('2d');
+                this.options = Object.assign({
+                    showGrid: true,
+                    showRoots: true,
+                    showVertex: true,
+                    showYIntercept: true,
+                    showAxisSym: true,
+                    domain: [-10, 10],
+                    range: [-10, 10],
+                    interactivePoint: null,
+                    labelPoints: true
+                }, options);
+
+                this.a = 1;
+                this.b = 0;
+                this.c = 0;
+
+                this.initEvents();
+                this.resize();
+            }
+
+            setParams(a, b, c) {
+                this.a = parseFloat(a);
+                this.b = parseFloat(b);
+                this.c = parseFloat(c);
+                this.draw();
+            }
+
+            resize() {
+                if (!this.canvas) return;
+                const rect = this.canvas.parentElement.getBoundingClientRect();
+                this.canvas.width = rect.width * (window.devicePixelRatio || 1);
+                this.canvas.height = rect.height * (window.devicePixelRatio || 1);
+                this.ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+                this.draw();
+            }
+
+            toCanvasX(x) {
+                const w = this.canvas.width / (window.devicePixelRatio || 1);
+                const [minX, maxX] = this.options.domain;
+                return ((x - minX) / (maxX - minX)) * w;
+            }
+
+            toCanvasY(y) {
+                const h = this.canvas.height / (window.devicePixelRatio || 1);
+                const [minY, maxY] = this.options.range;
+                return h - (((y - minY) / (maxY - minY)) * h);
+            }
+
+            toMathX(cx) {
+                const w = this.canvas.width / (window.devicePixelRatio || 1);
+                const [minX, maxX] = this.options.domain;
+                return minX + (cx / w) * (maxX - minX);
+            }
+
+            toMathY(cy) {
+                const h = this.canvas.height / (window.devicePixelRatio || 1);
+                const [minY, maxY] = this.options.range;
+                return minY + ((h - cy) / h) * (maxY - minY);
+            }
+
+            draw() {
+                if (!this.ctx) return;
+                const w = this.canvas.width / (window.devicePixelRatio || 1);
+                const h = this.canvas.height / (window.devicePixelRatio || 1);
+                const ctx = this.ctx;
+
+                ctx.clearRect(0, 0, w, h);
+
+                // 1. Draw Grid
+                if (this.options.showGrid) {
+                    ctx.strokeStyle = "#e2e8f0";
+                    ctx.lineWidth = 1;
+                    const [minX, maxX] = this.options.domain;
+                    const [minY, maxY] = this.options.range;
+
+                    for (let x = Math.ceil(minX); x <= Math.floor(maxX); x++) {
+                        const cx = this.toCanvasX(x);
+                        ctx.beginPath();
+                        ctx.moveTo(cx, 0);
+                        ctx.lineTo(cx, h);
+                        ctx.stroke();
+                    }
+
+                    for (let y = Math.ceil(minY); y <= Math.floor(maxY); y++) {
+                        const cy = this.toCanvasY(y);
+                        ctx.beginPath();
+                        ctx.moveTo(0, cy);
+                        ctx.lineTo(w, cy);
+                        ctx.stroke();
+                    }
+                }
+
+                // 2. Draw Main Axes
+                const originX = this.toCanvasX(0);
+                const originY = this.toCanvasY(0);
+
+                ctx.strokeStyle = "#475569";
+                ctx.lineWidth = 2;
+
+                // X-Axis
+                ctx.beginPath();
+                ctx.moveTo(0, originY);
+                ctx.lineTo(w, originY);
+                ctx.stroke();
+
+                // Y-Axis
+                ctx.beginPath();
+                ctx.moveTo(originX, 0);
+                ctx.lineTo(originX, h);
+                ctx.stroke();
+
+                // Axis Labels
+                ctx.fillStyle = "#64748b";
+                ctx.font = "11px Inter, sans-serif";
+                ctx.fillText("X", w - 15, originY - 6);
+                ctx.fillText("Y", originX + 6, 15);
+                ctx.fillText("0", originX - 10, originY + 14);
+
+                // Numbers along axes
+                const [minX, maxX] = this.options.domain;
+                const [minY, maxY] = this.options.range;
+
+                for (let x = Math.ceil(minX); x <= Math.floor(maxX); x++) {
+                    if (x === 0) continue;
+                    const cx = this.toCanvasX(x);
+                    ctx.fillText(x.toString(), cx - 4, originY + 14);
+                }
+
+                for (let y = Math.ceil(minY); y <= Math.floor(maxY); y++) {
+                    if (y === 0) continue;
+                    const cy = this.toCanvasY(y);
+                    ctx.fillText(y.toString(), originX + 6, cy + 4);
+                }
+
+                const calc = calcQuadratic(this.a, this.b, this.c);
+
+                // 3. Axis of Symmetry
+                if (this.options.showAxisSym && Math.abs(calc.h) <= 20) {
+                    const symX = this.toCanvasX(calc.h);
+                    ctx.setLineDash([5, 5]);
+                    ctx.strokeStyle = "#93c5fd";
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(symX, 0);
+                    ctx.lineTo(symX, h);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
+                // 4. Parabola Curve
+                ctx.beginPath();
+                ctx.strokeStyle = "#2563eb";
+                ctx.lineWidth = 3.5;
+
+                let started = false;
+                const step = 2; // px per step
+                for (let cx = 0; cx <= w; cx += step) {
+                    const x = this.toMathX(cx);
+                    const y = this.a * x * x + this.b * x + this.c;
+                    const cy = this.toCanvasY(y);
+
+                    if (!started) {
+                        ctx.moveTo(cx, cy);
+                        started = true;
+                    } else {
+                        ctx.lineTo(cx, cy);
+                    }
+                }
+                ctx.stroke();
+
+                // 5. Special Key Points
+                // Vertex (h, k)
+                if (this.options.showVertex) {
+                    const vx = this.toCanvasX(calc.h);
+                    const vy = this.toCanvasY(calc.k);
+                    this.drawPoint(vx, vy, "#dc2626", `Puncak (${calc.h.toFixed(1)}, ${calc.k.toFixed(1)})`);
+                }
+
+                // Y-intercept
+                if (this.options.showYIntercept) {
+                    const yx = this.toCanvasX(0);
+                    const yy = this.toCanvasY(calc.c);
+                    this.drawPoint(yx, yy, "#d97706", `Sumbu-Y (0, ${calc.c})`);
+                }
+
+                // Roots / X-intercepts
+                if (this.options.showRoots && calc.hasRealRoots) {
+                    calc.roots.forEach((r, idx) => {
+                        const rx = this.toCanvasX(r);
+                        const ry = this.toCanvasY(0);
+                        this.drawPoint(rx, ry, "#10b981", `Akar x${idx+1} (${r.toFixed(1)}, 0)`);
+                    });
+                }
+            }
+
+            drawPoint(cx, cy, color, label) {
+                const ctx = this.ctx;
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = "#ffffff";
+                ctx.stroke();
+
+                if (this.options.labelPoints) {
+                    ctx.fillStyle = "#0f172a";
+                    ctx.font = "bold 11px Inter, sans-serif";
+                    ctx.fillText(label, cx + 8, cy - 8);
+                }
+            }
+
+            initEvents() {
+                window.addEventListener('resize', () => this.resize());
+            }
+        }
+
+        // ROUTER AND VIEW SWITCHER
+        function navigateTo(moduleId) {
+            appState.currentModule = moduleId;
+            renderView();
+            updateNavigationUI();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function toggleDashboardMenu() {
+            const modal = document.getElementById('navModal');
+            modal.classList.toggle('hidden');
+        }
+
+        function updateNavigationUI() {
+            const completedCount = Object.values(appState.progress).filter(Boolean).length;
+            const percentage = Math.round((completedCount / 9) * 100);
+            
+            const progressBar = document.getElementById('globalProgressBar');
+            const progressText = document.getElementById('globalProgressText');
+            if (progressBar) progressBar.style.width = percentage + '%';
+            if (progressText) progressText.textContent = percentage + '%';
+
+            const badgeCount = Object.values(appState.badges).filter(Boolean).length;
+            const badgeCountText = document.getElementById('badgeCountText');
+            if (badgeCountText) badgeCountText.textContent = `${badgeCount} / 7`;
+
+            const menuList = document.getElementById('moduleMenuList');
+            if (menuList) {
+                menuList.innerHTML = modulesList.map(m => {
+                    const isDone = appState.progress[m.id];
+                    const isActive = appState.currentModule === m.id;
+                    return `
+                        <button onclick="navigateTo('${m.id}'); toggleDashboardMenu();" 
+                                class="w-full text-left p-3 rounded-xl border ${isActive ? 'border-blue-500 bg-blue-50/70 text-blue-900 font-bold' : 'border-slate-200 hover:bg-slate-50 text-slate-700'} flex items-center justify-between transition text-xs">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-7 h-7 rounded-lg ${isDone ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-600'} flex items-center justify-center font-bold text-xs">
+                                    <i class="fa-solid ${isDone ? 'fa-check' : m.icon}"></i>
+                                </div>
+                                <div>
+                                    <div class="font-bold">${m.code}. ${m.title}</div>
+                                    <div class="text-[10px] text-slate-500">${m.subtitle}</div>
+                                </div>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-slate-400 text-xs"></i>
+                        </button>
+                    `;
+                }).join('');
+            }
+        }
+
+        function triggerMathRender() {
+            if (window.renderMathInElement) {
+                renderMathInElement(document.body, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false}
+                    ],
+                    throwOnError: false
+                });
+            }
+        }
+
+        function renderView() {
+            const main = document.getElementById('mainContainer');
+            
+            switch(appState.currentModule) {
+                case 'cover':
+                    main.innerHTML = renderCoverPage();
+                    initCoverAnimation();
+                    break;
+                case 'dashboard':
+                    main.innerHTML = renderDashboardPage();
+                    break;
+                case 'm1':
+                    main.innerHTML = renderModule1();
+                    initModule1Events();
+                    break;
+                case 'm2':
+                    main.innerHTML = renderModule2();
+                    initModule2Canvas();
+                    break;
+                case 'm3':
+                    main.innerHTML = renderModule3();
+                    initModule3Canvas();
+                    break;
+                case 'm4':
+                    main.innerHTML = renderModule4();
+                    initModule4Canvas();
+                    break;
+                case 'm5':
+                    main.innerHTML = renderModule5();
+                    initModule5Canvas();
+                    break;
+                case 'm6':
+                    main.innerHTML = renderModule6();
+                    initModule6Canvas();
+                    break;
+                case 'm7':
+                    main.innerHTML = renderModule7();
+                    break;
+                case 'm8':
+                    main.innerHTML = renderModule8();
+                    break;
+                case 'm9':
+                    main.innerHTML = renderModule9();
+                    initModule9Quiz();
+                    break;
+                case 'playground':
+                    main.innerHTML = renderPlayground();
+                    initPlaygroundCanvas();
+                    break;
+                default:
+                    main.innerHTML = renderCoverPage();
+            }
+
+            setTimeout(triggerMathRender, 50);
+        }
+
+        function renderCoverPage() {
+            return `
+                <div class="flex-1 flex flex-col items-center justify-center text-center py-8 px-4">
+                    <div class="inline-flex items-center space-x-2 bg-blue-100 text-blue-800 text-xs font-semibold px-4 py-1.5 rounded-full mb-6 border border-blue-200 shadow-sm animate-bounce">
+                        <i class="fa-solid fa-flask"></i>
+                        <span>Laboratorium Matematika SMA Interaktif</span>
+                    </div>
+
+                    <h1 class="text-3xl sm:text-5xl font-black text-navy-900 leading-tight mb-4 tracking-tight max-w-4xl">
+                        LABORATORIUM INTERAKTIF<br>
+                        <span class="bg-gradient-to-r from-blue-600 via-cyan-500 to-emerald-500 bg-clip-text text-transparent">FUNGSI KUADRAT</span>
+                    </h1>
+
+                    <p class="text-base sm:text-xl text-slate-600 max-w-2xl mb-8 font-medium">
+                        "Ubah Persamaan, Amati Grafik, Temukan Polanya!"
+                    </p>
+
+                    <!-- Interactive Animated Hero Parabola Canvas -->
+                    <div class="w-full max-w-xl h-64 bg-white rounded-2xl shadow-xl border border-slate-200 p-2 mb-8 relative overflow-hidden group">
+                        <canvas id="coverHeroCanvas"></canvas>
+                        <div class="absolute bottom-3 right-3 bg-navy-900/80 backdrop-blur-md text-white text-xs px-3 py-1 rounded-lg border border-slate-700 font-mono">
+                            y = <span id="heroEqText">x² - 4x + 3</span>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row items-center gap-4 mb-12">
+                        <button onclick="navigateTo('dashboard')" class="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-600 to-royal-700 hover:from-blue-700 hover:to-royal-800 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-0.5 flex items-center justify-center space-x-3">
+                            <span>MULAI BELAJAR</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                        <button onclick="navigateTo('playground')" class="w-full sm:w-auto px-6 py-4 bg-white hover:bg-slate-100 text-slate-700 font-semibold text-base rounded-xl border border-slate-300 shadow-sm transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-gamepad text-blue-600"></i>
+                            <span>Mode Bebas (Playground)</span>
+                        </button>
+                    </div>
+
+                    <!-- Identity Card -->
+                    <div class="bg-white/80 backdrop-blur border border-slate-200 rounded-2xl p-4 max-w-md w-full shadow-sm text-left flex items-center space-x-4">
+                        <div class="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xl">
+                            <i class="fa-solid fa-user-graduate"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-sm">Praphastha Jayantara, S.Pd.</h4>
+                            <p class="text-xs text-slate-500">Guru Matematika • SMA Negeri 1 Purwantoro</p>
+                            <span class="inline-block mt-1 text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200">Matematika Wajib SMA</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        let coverHeroRenderer;
+        function initCoverAnimation() {
+            coverHeroRenderer = new ParabolaRenderer('coverHeroCanvas', { showGrid: true, showRoots: true, showVertex: true });
+            let t = 0;
+            const animate = () => {
+                if (appState.currentModule !== 'cover') return;
+                t += 0.03;
+                const a = 1;
+                const b = Math.sin(t) * 4;
+                const c = Math.cos(t) * 3 - 2;
+                coverHeroRenderer.setParams(a, b, c);
+                const eqElem = document.getElementById('heroEqText');
+                if (eqElem) eqElem.textContent = formatEquation(a, b.toFixed(1), c.toFixed(1)).replace('y = ', '');
+                requestAnimationFrame(animate);
+            };
+            animate();
+        }
+
+        function renderDashboardPage() {
+            return `
+                <div class="py-6 max-w-5xl mx-auto w-full">
+                    <div class="text-center mb-8">
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-navy-900">Peta Perjalanan Belajar</h2>
+                        <p class="text-slate-600 text-sm mt-1">Ikuti alur eksplorasi terstruktur dari pemaanasan hingga kuis evaluasi</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${modulesList.map((m, idx) => {
+                            const isDone = appState.progress[m.id];
+                            return `
+                                <div onclick="navigateTo('${m.id}')" class="bg-white rounded-2xl p-5 border border-slate-200 hover:border-blue-400 hover:shadow-md transition cursor-pointer flex flex-col justify-between group relative overflow-hidden">
+                                    <div class="flex items-start justify-between mb-3">
+                                        <span class="text-2xl font-black text-slate-200 group-hover:text-blue-500 transition">${m.code}</span>
+                                        <div class="w-10 h-10 rounded-xl ${isDone ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-50 text-blue-600'} flex items-center justify-center text-lg">
+                                            <i class="fa-solid ${isDone ? 'fa-circle-check' : m.icon}"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-slate-800 text-base mb-1 group-hover:text-blue-600 transition">${m.title}</h3>
+                                        <p class="text-xs text-slate-500 leading-relaxed">${m.subtitle}</p>
+                                    </div>
+                                    <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-blue-600">
+                                        <span>${isDone ? 'Selesai / Ulangi' : 'Mulai Eksplorasi'}</span>
+                                        <i class="fa-solid fa-arrow-right transform group-hover:translate-x-1 transition"></i>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        const m1Questions = [
+            { id: 1, eq: "x² − 5x + 6 = 0", options: ["x = 2 dan x = 3", "x = -2 dan x = -3", "x = 1 dan x = 6", "x = -1 dan x = 5"], ans: 0, hint: "Cari dua bilangan yang jika dikalikan menghasilkan +6 dan jika dijumlahkan menghasilkan -5. Faktornya adalah (x - 2)(x - 3) = 0." },
+            { id: 2, eq: "x² − 4 = 0", options: ["x = 2 sahaja", "x = 2 dan x = -2", "x = 4 dan x = -4", "Tidak ada akar real"], ans: 1, hint: "Ini merupakan bentuk selisih dua kuadrat: a² - b² = (a - b)(a + b). Sehingga (x - 2)(x + 2) = 0." },
+            { id: 3, eq: "x² + 6x + 9 = 0", options: ["x = 3 dan x = -3", "x = 3 (akar kembar)", "x = -3 (akar kembar)", "Tidak ada akar real"], ans: 2, hint: "Faktor kuadrat sempurna: (x + 3)² = 0, sehingga x₁ = x₂ = -3." },
+            { id: 4, eq: "x² + 2x + 5 = 0", options: ["x = 1 dan x = -5", "x = -1 dan x = 5", "Akar kembar x = -1", "Tidak memiliki akar real"], ans: 3, hint: "Cek nilai diskriminan D = b² - 4ac = 2² - 4(1)(5) = 4 - 20 = -16. Karena D < 0, persamaan tidak memiliki akar real." },
+            { id: 5, eq: "2x² − 7x + 3 = 0", options: ["x = 3 dan x = 1/2", "x = -3 dan x = -1/2", "x = 7 dan x = 3", "x = 2 dan x = 3"], ans: 0, hint: "Faktorkan menjadi (2x - 1)(x - 3) = 0, sehingga 2x = 1 → x = 1/2 atau x = 3." }
+        ];
+
+        function renderModule1() {
+            return `
+                <div class="max-w-4xl mx-auto w-full py-4">
+                    <!-- Module Header Navigation -->
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Modul 01 dari 09</span>
+                            <h2 class="text-2xl font-extrabold text-navy-900">Pemanasan: Akar-Akar Persamaan Kuadrat</h2>
+                        </div>
+                        <button onclick="navigateTo('m2')" class="px-4 py-2 bg-blue-600 text-white font-semibold text-sm rounded-xl hover:bg-blue-700 transition flex items-center space-x-2">
+                            <span>Modul Berikutnya</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+
+                    <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6 flex items-start space-x-3">
+                        <i class="fa-solid fa-lightbulb text-blue-600 text-xl mt-0.5"></i>
+                        <p class="text-xs sm:text-sm text-blue-900 leading-relaxed">
+                            Akar-akar persamaan kuadrat $ax^2 + bx + c = 0$ adalah nilai $x$ yang membuat nilai persamaan sama dengan nol. Selesaikan 5 soal pemanasan berikut untuk mereview konsep dasar!
+                        </p>
+                    </div>
+
+                    <div class="space-y-6">
+                        ${m1Questions.map((q, qIdx) => `
+                            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                                <div class="flex items-center justify-between mb-4">
+                                    <span class="bg-slate-100 text-slate-700 text-xs font-bold px-3 py-1 rounded-full">Soal #${q.id}</span>
+                                    <span id="m1-status-${q.id}" class="text-xs font-bold"></span>
+                                </div>
+                                <h3 class="text-lg font-bold text-slate-800 mb-4 font-mono">Tentukan akar-akar dari: ${q.eq}</h3>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                                    ${q.options.map((opt, optIdx) => `
+                                        <button onclick="checkM1Question(${q.id}, ${optIdx})" 
+                                                id="m1-btn-${q.id}-${optIdx}"
+                                                class="m1-opt-btn text-left p-3.5 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 font-medium text-sm transition text-slate-700">
+                                            <span class="inline-block w-6 font-bold text-slate-400">${String.fromCharCode(65 + optIdx)}.</span> ${opt}
+                                        </button>
+                                    `).join('')}
+                                </div>
+
+                                <div id="m1-feedback-${q.id}" class="hidden p-4 rounded-xl text-xs sm:text-sm leading-relaxed"></div>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div class="mt-8 flex justify-end">
+                        <button onclick="completeModule1()" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow transition">
+                            Selesaikan Modul Pemanasan & Lanjut
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function checkM1Question(qId, optIdx) {
+            const q = m1Questions.find(item => item.id === qId);
+            const feedbackElem = document.getElementById(`m1-feedback-${qId}`);
+            const statusElem = document.getElementById(`m1-status-${qId}`);
+
+            // Reset buttons
+            for (let i = 0; i < q.options.length; i++) {
+                const btn = document.getElementById(`m1-btn-${qId}-${i}`);
+                btn.className = "m1-opt-btn text-left p-3.5 rounded-xl border border-slate-200 font-medium text-sm transition text-slate-700 opacity-60";
+            }
+
+            const selectedBtn = document.getElementById(`m1-btn-${qId}-${optIdx}`);
+            feedbackElem.classList.remove('hidden');
+
+            if (optIdx === q.ans) {
+                selectedBtn.className = "m1-opt-btn text-left p-3.5 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-emerald-900 font-bold text-sm transition";
+                statusElem.textContent = "✓ BENAR";
+                statusElem.className = "text-xs font-bold text-emerald-600";
+
+                feedbackElem.className = "p-4 rounded-xl text-xs sm:text-sm bg-emerald-50 text-emerald-900 border border-emerald-200 mt-3";
+                feedbackElem.innerHTML = `<strong>Tepat sekali!</strong> ${q.hint}`;
+                appState.m1Answers[qId] = true;
+            } else {
+                selectedBtn.className = "m1-opt-btn text-left p-3.5 rounded-xl border-2 border-red-500 bg-red-50 text-red-900 font-bold text-sm transition";
+                statusElem.textContent = "✕ KURANG TEPAT";
+                statusElem.className = "text-xs font-bold text-red-600";
+
+                feedbackElem.className = "p-4 rounded-xl text-xs sm:text-sm bg-red-50 text-red-900 border border-red-200 mt-3";
+                feedbackElem.innerHTML = `<strong>Petunjuk Pembahasan:</strong> ${q.hint}`;
+                appState.m1Answers[qId] = false;
+            }
+        }
+
+        function completeModule1() {
+            appState.progress.m1 = true;
+            appState.badges.akar = true;
+            navigateTo('m2');
+        }
+
+        function initModule1Events() {}
+
+        function renderModule2() {
+            return `
+                <div class="max-w-6xl mx-auto w-full py-4 flex flex-col gap-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Modul 02 dari 09</span>
+                            <h2 class="text-2xl font-extrabold text-navy-900">Dari Akar ke Grafik Parabola</h2>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="navigateTo('m1')" class="px-3 py-1.5 bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg hover:bg-slate-300">← Kembali</button>
+                            <button onclick="navigateTo('m3')" class="px-3 py-1.5 bg-blue-600 text-white font-semibold text-xs rounded-lg hover:bg-blue-700">Berikutnya →</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        <!-- Canvas View Column -->
+                        <div class="lg:col-span-7 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="font-bold text-slate-800 text-sm">Visualisasi Real-time Parabola</h3>
+                                <div class="space-x-2">
+                                    <button onclick="m2ShowRootsToggle()" id="m2RootsBtn" class="px-3 py-1 bg-emerald-600 text-white text-xs font-bold rounded-lg shadow">Tampilkan Akar (2,0) & (3,0)</button>
+                                </div>
+                            </div>
+                            <div class="canvas-container flex-1 min-h-[350px]">
+                                <canvas id="m2Canvas"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Interactive Control Column -->
+                        <div class="lg:col-span-5 flex flex-col space-y-4">
+                            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                                <h3 class="font-bold text-navy-900 text-base mb-2">Persamaan Contoh:</h3>
+                                <div class="bg-slate-900 text-emerald-400 p-3 rounded-xl font-mono font-bold text-center text-lg mb-4">
+                                    y = x² − 5x + 6
+                                </div>
+
+                                <div class="space-y-3 text-xs text-slate-600 leading-relaxed">
+                                    <p class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                                        <strong class="text-slate-800">Penemuan Utama:</strong><br>
+                                        Akar-akar persamaan kuadrat ($x = 2$ dan $x = 3$) adalah nilai di mana $y = 0$.
+                                        Secara geometris, ini adalah <strong>Titik Potong Grafik terhadap Sumbu-X</strong>!
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Exploration Question Box -->
+                            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 p-5 rounded-2xl border border-blue-200">
+                                <h4 class="font-bold text-blue-900 text-sm mb-2"><i class="fa-solid fa-circle-question mr-1"></i> Pertanyaan Eksploratif:</h4>
+                                <p class="text-xs text-blue-800 mb-3">
+                                    Apa yang terjadi jika parabola bernilai $y = x^2 - 4x + 4$? Di berapa titik grafik memotong sumbu-X?
+                                </p>
+                                <div class="space-y-2">
+                                    <button onclick="m2TestEquation(1, -4, 4, '1 Titik (Akar Kembar x=2)')" class="w-full text-left p-2.5 bg-white rounded-lg border border-blue-200 hover:bg-blue-100 text-xs font-semibold text-slate-700">
+                                        A. Memotong tepat di 1 titik (Akar Kembar)
+                                    </button>
+                                    <button onclick="m2TestEquation(1, 0, 4, 'Tidak memotong sumbu-X')" class="w-full text-left p-2.5 bg-white rounded-lg border border-blue-200 hover:bg-blue-100 text-xs font-semibold text-slate-700">
+                                        B. Tidak memotong sumbu-X sama sekali
+                                    </button>
+                                </div>
+                                <div id="m2ExplorationFeedback" class="mt-3 text-xs font-bold text-emerald-700 hidden"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        let m2Renderer;
+        function initModule2Canvas() {
+            m2Renderer = new ParabolaRenderer('m2Canvas', { showGrid: true, showRoots: true });
+            m2Renderer.setParams(1, -5, 6);
+        }
+
+        function m2ShowRootsToggle() {
+            m2Renderer.setParams(1, -5, 6);
+        }
+
+        function m2TestEquation(a, b, c, msg) {
+            m2Renderer.setParams(a, b, c);
+            const feedback = document.getElementById('m2ExplorationFeedback');
+            feedback.innerHTML = `✓ Tepat! Grafik berubah menjadi y = ${formatEquation(a,b,c).replace('y = ','')} → ${msg}`;
+            feedback.classList.remove('hidden');
+        }
+
+        function renderModule3() {
+            return `
+                <div class="max-w-6xl mx-auto w-full py-4 flex flex-col gap-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Modul 03 dari 09</span>
+                            <h2 class="text-2xl font-extrabold text-navy-900">Membangun Parabola dari Informasi Known</h2>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="navigateTo('m2')" class="px-3 py-1.5 bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg hover:bg-slate-300">← Kembali</button>
+                            <button onclick="navigateTo('m4')" class="px-3 py-1.5 bg-blue-600 text-white font-semibold text-xs rounded-lg hover:bg-blue-700">Berikutnya →</button>
+                        </div>
+                    </div>
+
+                    <!-- Mode Selection Tabs -->
+                    <div class="flex space-x-2 border-b border-slate-200 pb-2 overflow-x-auto">
+                        <button onclick="setM3Mode('roots')" id="m3Tab-roots" class="px-4 py-2 text-xs font-bold rounded-xl active-tab shadow-sm">Mode A: Dari 2 Akar</button>
+                        <button onclick="setM3Mode('intercept')" id="m3Tab-intercept" class="px-4 py-2 text-xs font-bold rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200">Mode B: Akar & Sumbu-Y</button>
+                        <button onclick="setM3Mode('vertex')" id="m3Tab-vertex" class="px-4 py-2 text-xs font-bold rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200">Mode C: Titik Puncak</button>
+                        <button onclick="setM3Mode('points')" id="m3Tab-points" class="px-4 py-2 text-xs font-bold rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200">Mode D: 3 Titik</button>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        <div class="lg:col-span-7 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+                            <div class="canvas-container flex-1 min-h-[380px]">
+                                <canvas id="m3Canvas"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="lg:col-span-5 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                            <div id="m3ControlPanel">
+                                <!-- Dynamically populated based on mode -->
+                            </div>
+
+                            <div class="mt-6 p-4 bg-slate-900 text-white rounded-xl font-mono text-center">
+                                <span class="text-xs text-slate-400 block mb-1">Persamaan Terbentuk:</span>
+                                <div id="m3FormulasDisplay" class="text-lg font-bold text-cyan-300">y = 1(x - 1)(x - 4)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        let m3Renderer;
+        let m3CurrentMode = 'roots';
+
+        function initModule3Canvas() {
+            m3Renderer = new ParabolaRenderer('m3Canvas', { showGrid: true });
+            setM3Mode('roots');
+        }
+
+        function setM3Mode(mode) {
+            m3CurrentMode = mode;
+            ['roots', 'intercept', 'vertex', 'points'].forEach(m => {
+                const btn = document.getElementById(`m3Tab-${m}`);
+                if (btn) btn.className = m === mode ? "px-4 py-2 text-xs font-bold rounded-xl active-tab shadow-sm" : "px-4 py-2 text-xs font-bold rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200";
+            });
+
+            const panel = document.getElementById('m3ControlPanel');
+            if (mode === 'roots') {
+                panel.innerHTML = `
+                    <h3 class="font-bold text-slate-800 text-sm mb-3">Mode A: y = a(x − x₁)(x − x₂)</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 flex justify-between">Akar x₁: <span id="m3x1Val">1</span></label>
+                            <input type="range" min="-5" max="5" value="1" step="1" oninput="updateM3()" id="m3x1" class="w-full accent-blue-600">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 flex justify-between">Akar x₂: <span id="m3x2Val">4</span></label>
+                            <input type="range" min="-5" max="5" value="4" step="1" oninput="updateM3()" id="m3x2" class="w-full accent-blue-600">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 flex justify-between">Skala / Buka (a): <span id="m3aVal">1</span></label>
+                            <input type="range" min="-3" max="3" value="1" step="0.5" oninput="updateM3()" id="m3a" class="w-full accent-blue-600">
+                        </div>
+                    </div>
+                `;
+            } else if (mode === 'vertex') {
+                panel.innerHTML = `
+                    <h3 class="font-bold text-slate-800 text-sm mb-3">Mode C: Bentuk Puncak y = a(x − h)² + k</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 flex justify-between">Geser Horisontal (h): <span id="m3hVal">2</span></label>
+                            <input type="range" min="-5" max="5" value="2" step="1" oninput="updateM3()" id="m3h" class="w-full accent-blue-600">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 flex justify-between">Geser Vertikal (k): <span id="m3kVal">-3</span></label>
+                            <input type="range" min="-8" max="8" value="-3" step="1" oninput="updateM3()" id="m3k" class="w-full accent-blue-600">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 flex justify-between">Koefisien a: <span id="m3aVal2">1</span></label>
+                            <input type="range" min="-3" max="3" value="1" step="0.5" oninput="updateM3()" id="m3a2" class="w-full accent-blue-600">
+                        </div>
+                    </div>
+                `;
+            } else {
+                panel.innerHTML = `
+                    <p class="text-xs text-slate-500 italic p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        Pilih nilai acak untuk melihat konstruksi parabola secara presisi matematis.
+                    </p>
+                    <button onclick="updateM3Random()" class="w-full py-2.5 bg-blue-600 text-white font-bold text-xs rounded-xl shadow">Generate Titik Acak</button>
+                `;
+            }
+            updateM3();
+        }
+
+        function updateM3() {
+            if (!m3Renderer) return;
+            if (m3CurrentMode === 'roots') {
+                const x1 = parseFloat(document.getElementById('m3x1').value);
+                const x2 = parseFloat(document.getElementById('m3x2').value);
+                const a = parseFloat(document.getElementById('m3a').value) || 0.1;
+
+                document.getElementById('m3x1Val').textContent = x1;
+                document.getElementById('m3x2Val').textContent = x2;
+                document.getElementById('m3aVal').textContent = a;
+
+                // y = a(x - x1)(x - x2) = a(x^2 - (x1+x2)x + x1*x2)
+                const b = -a * (x1 + x2);
+                const c = a * x1 * x2;
+
+                m3Renderer.setParams(a, b, c);
+                document.getElementById('m3FormulasDisplay').textContent = `y = ${a}(x - ${x1})(x - ${x2})`;
+            } else if (m3CurrentMode === 'vertex') {
+                const h = parseFloat(document.getElementById('m3h').value);
+                const k = parseFloat(document.getElementById('m3k').value);
+                const a = parseFloat(document.getElementById('m3a2').value) || 0.1;
+
+                document.getElementById('m3hVal').textContent = h;
+                document.getElementById('m3kVal').textContent = k;
+                document.getElementById('m3aVal2').textContent = a;
+
+                // y = a(x - h)^2 + k = a(x^2 - 2hx + h^2) + k
+                const b = -2 * a * h;
+                const c = a * h * h + k;
+
+                m3Renderer.setParams(a, b, c);
+                document.getElementById('m3FormulasDisplay').textContent = `y = ${a}(x - ${h})² + (${k})`;
+            }
+        }
+
+        function updateM3Random() {
+            const a = (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 2) + 1);
+            const b = Math.floor(Math.random() * 6) - 3;
+            const c = Math.floor(Math.random() * 6) - 3;
+            m3Renderer.setParams(a, b, c);
+            document.getElementById('m3FormulasDisplay').textContent = formatEquation(a, b, c);
+        }
+
+        function renderModule4() {
+            return `
+                <div class="max-w-6xl mx-auto w-full py-4 flex flex-col gap-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Modul 04 dari 09</span>
+                            <h2 class="text-2xl font-extrabold text-navy-900">Laboratorium Koefisien (a, b, c)</h2>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="navigateTo('m3')" class="px-3 py-1.5 bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg hover:bg-slate-300">← Kembali</button>
+                            <button onclick="navigateTo('m5')" class="px-3 py-1.5 bg-blue-600 text-white font-semibold text-xs rounded-lg hover:bg-blue-700">Berikutnya →</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        <div class="lg:col-span-7 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+                            <div class="canvas-container flex-1 min-h-[380px]">
+                                <canvas id="m4Canvas"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Slider Controls & Dynamic Analytics -->
+                        <div class="lg:col-span-5 space-y-4">
+                            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                                <h3 class="font-bold text-slate-800 text-sm">Geser Slider Koefisien:</h3>
+                                
+                                <div>
+                                    <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                                        <span>Koefisien a:</span>
+                                        <span id="m4aVal" class="text-blue-600">1</span>
+                                    </div>
+                                    <input type="range" min="-4" max="4" value="1" step="0.5" id="m4a" oninput="updateM4()" class="w-full accent-blue-600">
+                                    <p class="text-[11px] text-slate-500 mt-0.5">Mengontrol arah buka (atas/bawah) & kelengkungan parabola.</p>
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                                        <span>Koefisien b:</span>
+                                        <span id="m4bVal" class="text-blue-600">-2</span>
+                                    </div>
+                                    <input type="range" min="-6" max="6" value="-2" step="1" id="m4b" oninput="updateM4()" class="w-full accent-blue-600">
+                                    <p class="text-[11px] text-slate-500 mt-0.5">Memengaruhi posisi sumbu simetri x = -b/(2a).</p>
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                                        <span>Konstanta c:</span>
+                                        <span id="m4cVal" class="text-blue-600">-3</span>
+                                    </div>
+                                    <input type="range" min="-8" max="8" value="-3" step="1" id="m4c" oninput="updateM4()" class="w-full accent-blue-600">
+                                    <p class="text-[11px] text-slate-500 mt-0.5">Menentukan titik potong sumbu-Y di (0, c).</p>
+                                </div>
+                            </div>
+
+                            <!-- Real-time Mathematical Summary Card -->
+                            <div class="bg-navy-900 text-white p-4 rounded-2xl space-y-2 font-mono text-xs">
+                                <div class="text-cyan-400 font-bold text-sm border-b border-slate-800 pb-1" id="m4EqDisplay">y = x² - 2x - 3</div>
+                                <div class="grid grid-cols-2 gap-2 pt-1 text-slate-300">
+                                    <div>Diskriminan (D): <span id="m4DVal" class="font-bold text-white">16</span></div>
+                                    <div>Titik Puncak: <span id="m4VertexVal" class="font-bold text-white">(1, -4)</span></div>
+                                    <div>Arah Buka: <span id="m4OpenVal" class="font-bold text-white">Ke Atas</span></div>
+                                    <div>Sumbu Simetri: <span id="m4SymVal" class="font-bold text-white">x = 1</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        let m4Renderer;
+        function initModule4Canvas() {
+            m4Renderer = new ParabolaRenderer('m4Canvas', { showGrid: true, showRoots: true, showVertex: true, showYIntercept: true });
+            updateM4();
+        }
+
+        function updateM4() {
+            if (!m4Renderer) return;
+            let a = parseFloat(document.getElementById('m4a').value);
+            if (a === 0) a = 0.1; // prevent flat line / division by zero
+            const b = parseFloat(document.getElementById('m4b').value);
+            const c = parseFloat(document.getElementById('m4c').value);
+
+            document.getElementById('m4aVal').textContent = a;
+            document.getElementById('m4bVal').textContent = b;
+            document.getElementById('m4cVal').textContent = c;
+
+            m4Renderer.setParams(a, b, c);
+            const calc = calcQuadratic(a, b, c);
+
+            document.getElementById('m4EqDisplay').textContent = calc.formattedEq;
+            document.getElementById('m4DVal').textContent = calc.D.toFixed(1);
+            document.getElementById('m4VertexVal').textContent = `(${calc.h.toFixed(1)}, ${calc.k.toFixed(1)})`;
+            document.getElementById('m4OpenVal').textContent = calc.openUp ? "Ke Atas" : "Ke Bawah";
+            document.getElementById('m4SymVal').textContent = `x = ${calc.h.toFixed(1)}`;
+        }
+
+        function renderModule5() {
+            return `
+                <div class="max-w-6xl mx-auto w-full py-4 flex flex-col gap-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Modul 05 dari 09</span>
+                            <h2 class="text-2xl font-extrabold text-navy-900">Laboratorium Pergeseran (Translasi Graph)</h2>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="navigateTo('m4')" class="px-3 py-1.5 bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg hover:bg-slate-300">← Kembali</button>
+                            <button onclick="navigateTo('m6')" class="px-3 py-1.5 bg-blue-600 text-white font-semibold text-xs rounded-lg hover:bg-blue-700">Berikutnya →</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        <div class="lg:col-span-7 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+                            <div class="canvas-container flex-1 min-h-[380px]">
+                                <canvas id="m5Canvas"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="lg:col-span-5 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-base mb-2">Bentuk Puncak: y = (x − h)² + k</h3>
+                                <p class="text-xs text-slate-500 mb-6">Amati bagaimana grafik y = x² bergeser secara horisontal (h) dan vertikal (k).</p>
+
+                                <div class="space-y-6">
+                                    <div>
+                                        <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                                            <span>Pergeseran Horisontal (h):</span>
+                                            <span id="m5hVal" class="text-blue-600">0</span>
+                                        </div>
+                                        <input type="range" min="-6" max="6" value="0" step="1" id="m5h" oninput="updateM5()" class="w-full accent-blue-600">
+                                        <span class="text-[11px] text-slate-400">h > 0 (geser kanan), h < 0 (geser kiri)</span>
+                                    </div>
+
+                                    <div>
+                                        <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                                            <span>Pergeseran Vertikal (k):</span>
+                                            <span id="m5kVal" class="text-blue-600">0</span>
+                                        </div>
+                                        <input type="range" min="-6" max="6" value="0" step="1" id="m5k" oninput="updateM5()" class="w-full accent-blue-600">
+                                        <span class="text-[11px] text-slate-400">k > 0 (geser atas), k < 0 (geser bawah)</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-blue-50 border border-blue-200 p-4 rounded-xl mt-6">
+                                <span class="text-xs font-bold text-blue-900 block mb-1">Koordinat Titik Puncak Baru:</span>
+                                <div id="m5VertexDisplay" class="text-xl font-bold text-blue-600 font-mono">(0, 0)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        let m5Renderer;
+        function initModule5Canvas() {
+            m5Renderer = new ParabolaRenderer('m5Canvas', { showGrid: true, showVertex: true });
+            updateM5();
+        }
+
+        function updateM5() {
+            if (!m5Renderer) return;
+            const h = parseFloat(document.getElementById('m5h').value);
+            const k = parseFloat(document.getElementById('m5k').value);
+
+            document.getElementById('m5hVal').textContent = h;
+            document.getElementById('m5kVal').textContent = k;
+
+            // y = (x - h)^2 + k = x^2 - 2hx + h^2 + k
+            const a = 1;
+            const b = -2 * h;
+            const c = h * h + k;
+
+            m5Renderer.setParams(a, b, c);
+            document.getElementById('m5VertexDisplay').textContent = `Puncak P(h, k) = (${h}, ${k})`;
+        }
+
+        function renderModule6() {
+            return `
+                <div class="max-w-6xl mx-auto w-full py-4 flex flex-col gap-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Modul 06 dari 09</span>
+                            <h2 class="text-2xl font-extrabold text-navy-900">Tantangan Membaca Grafik Parabola</h2>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="navigateTo('m5')" class="px-3 py-1.5 bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg hover:bg-slate-300">← Kembali</button>
+                            <button onclick="navigateTo('m7')" class="px-3 py-1.5 bg-blue-600 text-white font-semibold text-xs rounded-lg hover:bg-blue-700">Berikutnya →</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        <div class="lg:col-span-7 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-xs font-bold text-slate-500">Amati grafik parabola di bawah ini:</span>
+                                <button onclick="nextM6Challenge()" class="px-3 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold text-xs rounded-lg">Acak Grafik Lain</button>
+                            </div>
+                            <div class="canvas-container flex-1 min-h-[350px]">
+                                <canvas id="m6Canvas"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="lg:col-span-5 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                            <div>
+                                <span class="bg-blue-100 text-blue-800 text-[11px] font-bold px-2.5 py-1 rounded-full uppercase">Tantangan Detektif Grafik</span>
+                                <h3 class="font-bold text-slate-800 text-base mt-2 mb-3" id="m6QuestionText">Berdasarkan grafik di samping, di mana koordinat Titik Puncak parabola tersebut?</h3>
+                                
+                                <div id="m6Options" class="space-y-2.5">
+                                    <!-- Populated dynamically -->
+                                </div>
+                            </div>
+
+                            <div id="m6Feedback" class="hidden p-3.5 rounded-xl text-xs font-semibold mt-4"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        let m6Renderer;
+        let m6CurrentParams = { a: 1, b: -2, c: -3 };
+
+        function initModule6Canvas() {
+            m6Renderer = new ParabolaRenderer('m6Canvas', { showGrid: true, showRoots: true, showVertex: true, showYIntercept: true });
+            nextM6Challenge();
+        }
+
+        function nextM6Challenge() {
+            const presets = [
+                { a: 1, b: -2, c: -3, vertex: "(1, -4)", open: "Atas", roots: "-1 dan 3" },
+                { a: -1, b: 4, c: -3, vertex: "(2, 1)", open: "Bawah", roots: "1 dan 3" },
+                { a: 1, b: 0, c: -4, vertex: "(0, -4)", open: "Atas", roots: "-2 dan 2" },
+                { a: 1, b: -4, c: 4, vertex: "(2, 0)", open: "Atas", roots: "2 (Akar Kembar)" }
+            ];
+            
+            const pick = presets[Math.floor(Math.random() * presets.length)];
+            m6CurrentParams = pick;
+            if (m6Renderer) m6Renderer.setParams(pick.a, pick.b, pick.c);
+
+            const optionsBox = document.getElementById('m6Options');
+            const feedbackBox = document.getElementById('m6Feedback');
+            if (feedbackBox) feedbackBox.classList.add('hidden');
+
+            const opts = [
+                pick.vertex,
+                `(${pick.a * 2}, ${pick.c + 1})`,
+                `(${-pick.b}, ${pick.a})`,
+                `(0, ${pick.c})`
+            ].sort(() => Math.random() - 0.5);
+
+            if (optionsBox) {
+                optionsBox.innerHTML = opts.map(opt => `
+                    <button onclick="checkM6Answer('${opt}', '${pick.vertex}')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:bg-blue-50 hover:border-blue-300 font-semibold text-xs transition text-slate-700">
+                        Titik Puncak: ${opt}
+                    </button>
+                `).join('');
+            }
+        }
+
+        function checkM6Answer(selected, correct) {
+            const feedbackBox = document.getElementById('m6Feedback');
+            if (!feedbackBox) return;
+            feedbackBox.classList.remove('hidden');
+
+            if (selected === correct) {
+                feedbackBox.className = "p-3.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-900 border border-emerald-200";
+                feedbackBox.innerHTML = `<strong>✓ Benar!</strong> Titik puncak parabola tersebut berada tepat pada koordinat ${correct}.`;
+                appState.badges.detektif = true;
+                appState.progress.m6 = true;
+                updateNavigationUI();
+            } else {
+                feedbackBox.className = "p-3.5 rounded-xl text-xs font-semibold bg-red-50 text-red-900 border border-red-200";
+                feedbackBox.innerHTML = `<strong>✕ Kurang tepat.</strong> Amati posisi titik terendah/tertinggi grafik. Titik puncaknya adalah ${correct}.`;
+            }
+        }
+
+        function renderModule7() {
+            return `
+                <div class="max-w-5xl mx-auto w-full py-4 flex flex-col gap-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Modul 07 dari 09</span>
+                            <h2 class="text-2xl font-extrabold text-navy-900">Literasi Numerasi: Penerapan Dalam Kehidupan</h2>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="navigateTo('m6')" class="px-3 py-1.5 bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg hover:bg-slate-300">← Kembali</button>
+                            <button onclick="navigateTo('m8')" class="px-3 py-1.5 bg-blue-600 text-white font-semibold text-xs rounded-lg hover:bg-blue-700">Berikutnya →</button>
+                        </div>
+                    </div>
+
+                    <!-- Contextual Case Study Card -->
+                    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+                        <div class="flex items-center space-x-3 text-blue-600">
+                            <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center font-bold text-lg">
+                                <i class="fa-solid fa-water"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-base">Studi Kasus: Pancuran Air Menari (Air Mancur Taman)</h3>
+                                <p class="text-xs text-slate-500">Model matematika lintasan semprotan air: $h(t) = -t^2 + 6t$ (h dalam meter, t dalam detik)</p>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs sm:text-sm text-slate-700 leading-relaxed">
+                            Sebuah nozzle air mancur menyemprotkan air ke udara membentuk lintasan parabola. Ketinggian air $h$ (meter) setelah $t$ detik dimodelkan oleh fungsi kuadrat $h(t) = -t^2 + 6t$.
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                                <h4 class="font-bold text-blue-900 text-xs mb-2">Pertanyaan 1:</h4>
+                                <p class="text-xs text-blue-800 mb-3">Berapakah ketinggian maksimum yang dapat dicapai oleh semprotan air tersebut?</p>
+                                <div class="space-y-2">
+                                    <button onclick="checkM7Answer(1, '9m')" class="w-full text-left p-2.5 bg-white border border-blue-200 hover:bg-blue-100 rounded-lg text-xs font-semibold text-slate-700">
+                                        A. 9 Meter (saat t = 3 detik)
+                                    </button>
+                                    <button onclick="checkM7Answer(1, '6m')" class="w-full text-left p-2.5 bg-white border border-blue-200 hover:bg-blue-100 rounded-lg text-xs font-semibold text-slate-700">
+                                        B. 6 Meter (saat t = 6 detik)
+                                    </button>
+                                </div>
+                                <div id="m7Feedback1" class="hidden mt-3 p-2.5 rounded-lg text-xs font-semibold"></div>
+                            </div>
+
+                            <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                                <h4 class="font-bold text-emerald-900 text-xs mb-2">Pertanyaan 2:</h4>
+                                <p class="text-xs text-emerald-800 mb-3">Berapa lama total waktu yang dibutuhkan air dari saat disemprotkan hingga jatuh kembali ke permukaan air?</p>
+                                <div class="space-y-2">
+                                    <button onclick="checkM7Answer(2, '6s')" class="w-full text-left p-2.5 bg-white border border-emerald-200 hover:bg-emerald-100 rounded-lg text-xs font-semibold text-slate-700">
+                                        A. 6 Detik (saat h(t) = 0)
+                                    </button>
+                                    <button onclick="checkM7Answer(2, '3s')" class="w-full text-left p-2.5 bg-white border border-emerald-200 hover:bg-emerald-100 rounded-lg text-xs font-semibold text-slate-700">
+                                        B. 3 Detik
+                                    </button>
+                                </div>
+                                <div id="m7Feedback2" class="hidden mt-3 p-2.5 rounded-lg text-xs font-semibold"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function checkM7Answer(qId, val) {
+            const feedback = document.getElementById(`m7Feedback${qId}`);
+            if (!feedback) return;
+            feedback.classList.remove('hidden');
+
+            if (qId === 1) {
+                if (val === '9m') {
+                    feedback.className = "mt-3 p-2.5 rounded-lg text-xs font-semibold bg-emerald-100 text-emerald-900 border border-emerald-300";
+                    feedback.innerHTML = "✓ <strong>Tepat Sekali!</strong> Waktu puncak $t = -b/(2a) = -6 / (-2) = 3$ detik. $h(3) = -(3)^2 + 6(3) = -9 + 18 = 9$ meter.";
+                    appState.badges.literasi = true;
+                    appState.progress.m7 = true;
+                    updateNavigationUI();
+                } else {
+                    feedback.className = "mt-3 p-2.5 rounded-lg text-xs font-semibold bg-red-100 text-red-900 border border-red-300";
+                    feedback.innerHTML = "✕ <strong>Kurang tepat.</strong> Hitung koordinat $k = -D/(4a)$ atau subtitusi $t = 3$.";
+                }
+            } else if (qId === 2) {
+                if (val === '6s') {
+                    feedback.className = "mt-3 p-2.5 rounded-lg text-xs font-semibold bg-emerald-100 text-emerald-900 border border-emerald-300";
+                    feedback.innerHTML = "✓ <strong>Tepat Sekali!</strong> Air jatuh kembali saat $h(t) = 0 \\Rightarrow -t(t - 6) = 0 \\Rightarrow t = 6$ detik.";
+                    appState.badges.literasi = true;
+                    appState.progress.m7 = true;
+                    updateNavigationUI();
+                } else {
+                    feedback.className = "mt-3 p-2.5 rounded-lg text-xs font-semibold bg-red-100 text-red-900 border border-red-300";
+                    feedback.innerHTML = "✕ <strong>Kurang tepat.</strong> Cari akar non-nol dari $-t^2 + 6t = 0$.";
+                }
+            }
+        }
+
+        const m8Questions = [
+            {
+                level: "Level 1 — Dasar",
+                question: "Tentukan titik puncak (titik balik) dari fungsi kuadrat $f(x) = x^2 - 6x + 8$.",
+                options: ["(3, -1)", "(-3, 1)", "(6, 8)", "(3, 1)"],
+                ans: 0,
+                explanation: "Gunakan rumus absis puncak $h = -\\frac{b}{2a} = -\\frac{-6}{2(1)} = 3$. Lalu hitung nilai ordinat $k = f(3) = 3^2 - 6(3) + 8 = 9 - 18 + 8 = -1$. Koordinat puncak adalah (3, -1)."
+            },
+            {
+                level: "Level 2 — Menengah",
+                question: "Sebuah parabola $y = ax^2 + bx + c$ memotong sumbu-Y di titik (0, 5) dan memiliki titik puncak di (2, 1). Nilai $a$ adalah...",
+                options: ["a = 1", "a = 2", "a = -1", "a = 0.5"],
+                ans: 0,
+                explanation: "Gunakan bentuk puncak $y = a(x - h)^2 + k \\rightarrow y = a(x - 2)^2 + 1$. Subtitusi titik (0, 5): $5 = a(0 - 2)^2 + 1 \\Rightarrow 5 = 4a + 1 \\Rightarrow 4a = 4 \\Rightarrow a = 1$."
+            },
+            {
+                level: "Level 3 — HOTS (Aplikasi)",
+                question: "Grafik fungsi kuadrat $y = (p-1)x^2 - 4x + 4$ menyinggung sumbu-X tepat di satu titik. Nilai $p$ yang memenuhi adalah...",
+                options: ["p = 2", "p = 1", "p = -2", "p = 0"],
+                ans: 0,
+                explanation: "Grafik menyinggung sumbu-X jika Diskriminan $D = 0$. $D = b^2 - 4ac = (-4)^2 - 4(p-1)(4) = 16 - 16(p-1) = 0 \\Rightarrow 16 = 16(p-1) \\Rightarrow p - 1 = 1 \\Rightarrow p = 2$."
+            }
+        ];
+
+        function renderModule8() {
+            return `
+                <div class="max-w-4xl mx-auto w-full py-4 flex flex-col gap-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Modul 08 dari 09</span>
+                            <h2 class="text-2xl font-extrabold text-navy-900">Latihan Terstruktur (Level 1 - 3)</h2>
+                        </div>
+                        <button onclick="navigateTo('m9')" class="px-4 py-2 bg-blue-600 text-white font-semibold text-sm rounded-xl hover:bg-blue-700">Menuju Kuis Akhir →</button>
+                    </div>
+
+                    <div class="space-y-6">
+                        ${m8Questions.map((q, idx) => `
+                            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+                                <span class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full">${q.level}</span>
+                                <h3 class="text-base font-bold text-slate-800">Soal ${idx + 1}: ${q.question}</h3>
+                                
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    ${q.options.map((opt, oIdx) => `
+                                        <button onclick="checkM8Question(${idx}, ${oIdx})" id="m8-btn-${idx}-${oIdx}" class="p-3 border border-slate-200 rounded-xl text-xs font-medium hover:bg-blue-50 text-left transition">
+                                            <span class="font-bold text-slate-400 mr-2">${String.fromCharCode(65 + oIdx)}.</span> ${opt}
+                                        </button>
+                                    `).join('')}
+                                </div>
+                                <div id="m8-feedback-${idx}" class="hidden p-3.5 rounded-xl text-xs font-semibold leading-relaxed"></div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function checkM8Question(qIdx, oIdx) {
+            const q = m8Questions[qIdx];
+            const feedback = document.getElementById(`m8-feedback-${qIdx}`);
+            feedback.classList.remove('hidden');
+
+            for (let i = 0; i < q.options.length; i++) {
+                const btn = document.getElementById(`m8-btn-${qIdx}-${i}`);
+                btn.className = "p-3 border border-slate-200 rounded-xl text-xs font-medium text-left transition opacity-60";
+            }
+
+            const activeBtn = document.getElementById(`m8-btn-${qIdx}-${oIdx}`);
+
+            if (oIdx === q.ans) {
+                activeBtn.className = "p-3 border-2 border-emerald-500 bg-emerald-50 text-emerald-900 rounded-xl text-xs font-bold text-left";
+                feedback.className = "p-3.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-900 border border-emerald-200";
+                feedback.innerHTML = `<strong>✓ Jawaban Benar!</strong> ${q.explanation}`;
+            } else {
+                activeBtn.className = "p-3 border-2 border-red-500 bg-red-50 text-red-900 rounded-xl text-xs font-bold text-left";
+                feedback.className = "p-3.5 rounded-xl text-xs font-semibold bg-red-50 text-red-900 border border-red-200";
+                feedback.innerHTML = `<strong>✕ Jawaban Kurang Tepat.</strong> ${q.explanation}`;
+            }
+        }
+
+        const m9QuizQuestions = [
+            {
+                q: "Sebuah truk dengan tinggi 3.5 meter dan lebar 2 meter ingin melewati terowongan berpenampang parabola $y = -0.5x^2 + 4.5$. Apakah truk dapat melintas dengan aman?",
+                options: [
+                    "Ya, dapat melintas karena pada lebar 2m ($x = \\pm 1$), tinggi terowongan adalah 4m (> 3.5m).",
+                    "Tidak dapat melintas karena tinggi terowongan kurang dari 3.5 meter.",
+                    "Hanya bisa melintas jika truk berjalan tepat di tepi kanan terowongan.",
+                    "Terowongan terlalu sempit untuk semua jenis kendaraan."
+                ],
+                ans: 0,
+                exp: "Lebar truk 2m berarti $x$ membentang dari -1 hingga 1. Pada $x = 1$, $y = -0.5(1)^2 + 4.5 = 4.0$ meter. Karena 4.0m > 3.5m, truk dapat melintas dengan aman."
+            },
+            {
+                q: "Diketahui fungsi $f(x) = x^2 - 4x + k$. Agar grafik fungsi tidak memotong dan tidak menyinggung sumbu-X sama sekali, nilai $k$ harus memenuhi...",
+                options: ["k > 4", "k < 4", "k = 4", "k > 0"],
+                ans: 0,
+                exp: "Grafik tidak memotong/menyinggung sumbu-X jika Diskriminan $D < 0$. $D = (-4)^2 - 4(1)(k) = 16 - 4k < 0 \\Rightarrow 4k > 16 \\Rightarrow k > 4$."
+            },
+            {
+                q: "Titik potong parabola $y = 2x^2 - 8x + 6$ terhadap sumbu-Y adalah...",
+                options: ["(0, 6)", "(6, 0)", "(0, -8)", "(0, 2)"],
+                ans: 0,
+                exp: "Titik potong sumbu-Y terjadi saat $x = 0$, sehingga $y = c = 6$. Titiknya adalah (0, 6)."
+            },
+            {
+                q: "Jika grafik $y = x^2$ digeser 3 satuan ke kanan dan 2 satuan ke atas, persamaan fungsi kuadrat yang baru adalah...",
+                options: [
+                    "y = (x - 3)² + 2",
+                    "y = (x + 3)² + 2",
+                    "y = (x - 3)² - 2",
+                    "y = (x + 3)² - 2"
+                ],
+                ans: 0,
+                exp: "Bentuk translasi puncak adalah $y = (x - h)^2 + k$. Dengan $h = 3$ dan $k = 2$, diperoleh $y = (x - 3)^2 + 2$."
+            }
+        ];
+
+        let m9CurrentIdx = 0;
+        let m9Score = 0;
+
+        function renderModule9() {
+            return `
+                <div class="max-w-4xl mx-auto w-full py-4 flex flex-col gap-6">
+                    <div class="text-center space-y-2">
+                        <span class="text-xs font-bold text-emerald-600 uppercase tracking-wider">Evaluasi Akhir</span>
+                        <h2 class="text-3xl font-black text-navy-900">MISI MENAKLUKKAN PARABOLA</h2>
+                        <p class="text-xs text-slate-500">Uji seluruh kompetensi pemahaman fungsi kuadrat Anda</p>
+                    </div>
+
+                    <div id="m9QuizCard" class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
+                        <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                            <span id="m9ProgressText" class="text-xs font-bold text-blue-600">Soal 1 dari ${m9QuizQuestions.length}</span>
+                            <span id="m9ScoreBadge" class="text-xs font-bold bg-amber-100 text-amber-800 px-3 py-1 rounded-full">Skor: 0</span>
+                        </div>
+
+                        <div id="m9QuestionBox">
+                            <h3 id="m9QuestionTitle" class="text-base font-bold text-slate-800 mb-4"></h3>
+                            <div id="m9OptionsContainer" class="space-y-3"></div>
+                        </div>
+
+                        <div id="m9QuizFeedback" class="hidden p-4 rounded-xl text-xs font-semibold"></div>
+
+                        <div class="flex justify-end pt-2">
+                            <button id="m9NextBtn" onclick="nextM9Question()" class="hidden px-6 py-2.5 bg-blue-600 text-white font-bold text-xs rounded-xl shadow hover:bg-blue-700 transition">
+                                Soal Berikutnya →
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="m9ResultCard" class="hidden bg-white rounded-2xl p-8 border border-slate-200 shadow-lg text-center space-y-6">
+                        <div class="w-20 h-20 bg-amber-100 text-amber-500 rounded-3xl flex items-center justify-center text-4xl mx-auto shadow-inner">
+                            <i class="fa-solid fa-trophy"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-black text-navy-900">Laporan Evaluasi Kompetensi</h3>
+                            <p id="m9ScoreSummaryText" class="text-slate-600 text-sm mt-1"></p>
+                        </div>
+                        
+                        <div class="bg-slate-50 p-5 rounded-2xl text-xs font-mono text-left space-y-3 max-w-md mx-auto border border-slate-200">
+                            <div class="flex justify-between"><span>Total Soal:</span> <span id="m9TotalQText" class="font-bold text-slate-800"></span></div>
+                            <div class="flex justify-between"><span>Jawaban Benar:</span> <span id="m9CorrectText" class="font-bold text-emerald-600"></span></div>
+                            <div class="flex justify-between"><span>Nilai Akhir:</span> <span id="m9FinalScoreText" class="font-bold text-blue-600 text-sm"></span></div>
+                        </div>
+
+                        <div class="flex justify-center space-x-3 pt-2">
+                            <button onclick="initModule9Quiz()" class="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl shadow-sm transition">
+                                Ulangi Kuis
+                            </button>
+                            <button onclick="navigateTo('playground')" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow transition">
+                                Ke Mode Playground (Bebas)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function initModule9Quiz() {
+            m9CurrentIdx = 0;
+            m9Score = 0;
+            const quizCard = document.getElementById('m9QuizCard');
+            const resultCard = document.getElementById('m9ResultCard');
+            if (quizCard && resultCard) {
+                quizCard.classList.remove('hidden');
+                resultCard.classList.add('hidden');
+                loadM9Question();
+            }
+        }
+
+        function loadM9Question() {
+            const q = m9QuizQuestions[m9CurrentIdx];
+            document.getElementById('m9ProgressText').textContent = `Soal ${m9CurrentIdx + 1} dari ${m9QuizQuestions.length}`;
+            document.getElementById('m9ScoreBadge').textContent = `Skor: ${m9Score}`;
+            document.getElementById('m9QuestionTitle').innerHTML = q.q;
+
+            const container = document.getElementById('m9OptionsContainer');
+            container.innerHTML = q.options.map((opt, idx) => `
+                <button onclick="selectM9Answer(${idx})" id="m9-opt-${idx}" class="w-full text-left p-4 rounded-xl border border-slate-200 hover:bg-blue-50/50 hover:border-blue-300 transition text-xs font-medium text-slate-700 flex items-start space-x-3">
+                    <span class="font-bold text-slate-400">${String.fromCharCode(65 + idx)}.</span>
+                    <span>${opt}</span>
+                </button>
+            `).join('');
+
+            document.getElementById('m9QuizFeedback').classList.add('hidden');
+            document.getElementById('m9NextBtn').classList.add('hidden');
+
+            triggerMathRender();
+        }
+
+        function selectM9Answer(optIdx) {
+            const q = m9QuizQuestions[m9CurrentIdx];
+            const feedback = document.getElementById('m9QuizFeedback');
+            feedback.classList.remove('hidden');
+
+            for (let i = 0; i < q.options.length; i++) {
+                const btn = document.getElementById(`m9-opt-${i}`);
+                btn.disabled = true;
+                btn.className = "w-full text-left p-4 rounded-xl border border-slate-200 transition text-xs font-medium text-slate-700 flex items-start space-x-3 opacity-50";
+            }
+
+            const selectedBtn = document.getElementById(`m9-opt-${optIdx}`);
+
+            if (optIdx === q.ans) {
+                m9Score += 25;
+                selectedBtn.className = "w-full text-left p-4 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-emerald-900 transition text-xs font-bold flex items-start space-x-3";
+                feedback.className = "p-4 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-900 border border-emerald-200";
+                feedback.innerHTML = `<strong>✓ Jawaban Tepat!</strong> ${q.exp}`;
+            } else {
+                selectedBtn.className = "w-full text-left p-4 rounded-xl border-2 border-red-500 bg-red-50 text-red-900 transition text-xs font-bold flex items-start space-x-3";
+                feedback.className = "p-4 rounded-xl text-xs font-semibold bg-red-50 text-red-900 border border-red-200";
+                feedback.innerHTML = `<strong>✕ Jawaban Kurang Tepat.</strong> ${q.exp}`;
+            }
+
+            document.getElementById('m9ScoreBadge').textContent = `Skor: ${m9Score}`;
+            document.getElementById('m9NextBtn').classList.remove('hidden');
+            triggerMathRender();
+        }
+
+        function nextM9Question() {
+            m9CurrentIdx++;
+            if (m9CurrentIdx < m9QuizQuestions.length) {
+                loadM9Question();
+            } else {
+                showM9Results();
+            }
+        }
+
+        function showM9Results() {
+            document.getElementById('m9QuizCard').classList.add('hidden');
+            document.getElementById('m9ResultCard').classList.remove('hidden');
+
+            const correctCount = m9Score / 25;
+            document.getElementById('m9TotalQText').textContent = m9QuizQuestions.length;
+            document.getElementById('m9CorrectText').textContent = `${correctCount} Soal`;
+            document.getElementById('m9FinalScoreText').textContent = `${m9Score} / 100`;
+
+            let title = "🏆 MASTER PARABOLA";
+            if (m9Score < 50) title = "🌱 PEMULA PARABOLA";
+            else if (m9Score < 75) title = "⭐ AHLI GRAFIK";
+
+            document.getElementById('m9ScoreSummaryText').innerHTML = `Predikat Kompetensi: <strong class="text-blue-600">${title}</strong>`;
+            
+            appState.progress.m9 = true;
+            appState.badges.master = true;
+            updateNavigationUI();
+        }
+
+        function renderPlayground() {
+            return `
+                <div class="max-w-6xl mx-auto w-full py-4 flex flex-col gap-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Mode Bebas</span>
+                            <h2 class="text-2xl font-extrabold text-navy-900">Fungsi Kuadrat Versi Saya (Playground)</h2>
+                        </div>
+                        <button onclick="pgRandomize()" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow flex items-center space-x-1">
+                            <i class="fa-solid fa-dice"></i>
+                            <span>Fungsi Acak</span>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        <div class="lg:col-span-7 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+                            <div class="canvas-container flex-1 min-h-[380px]">
+                                <canvas id="pgCanvas"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="lg:col-span-5 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                            <h3 class="font-bold text-slate-800 text-sm">Input Parameter Bebas:</h3>
+
+                            <div class="grid grid-cols-3 gap-3">
+                                <div>
+                                    <label class="text-xs font-bold text-slate-600 block mb-1">a =</label>
+                                    <input type="number" id="pgA" value="1" step="0.5" onchange="updatePg()" class="w-full p-2 border border-slate-200 rounded-xl text-xs font-bold text-center">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-slate-600 block mb-1">b =</label>
+                                    <input type="number" id="pgB" value="-2" step="1" onchange="updatePg()" class="w-full p-2 border border-slate-200 rounded-xl text-xs font-bold text-center">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-slate-600 block mb-1">c =</label>
+                                    <input type="number" id="pgC" value="-3" step="1" onchange="updatePg()" class="w-full p-2 border border-slate-200 rounded-xl text-xs font-bold text-center">
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-900 text-white p-4 rounded-xl font-mono text-xs space-y-2">
+                                <div id="pgEqDisplay" class="text-cyan-300 font-bold text-sm">y = x² - 2x - 3</div>
+                                <div id="pgSummary" class="text-slate-300 space-y-1 text-[11px]"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        let pgRenderer;
+        function initPlaygroundCanvas() {
+            pgRenderer = new ParabolaRenderer('pgCanvas', { showGrid: true, showRoots: true, showVertex: true, showYIntercept: true });
+            updatePg();
+        }
+
+        function updatePg() {
+            if (!pgRenderer) return;
+            const a = parseFloat(document.getElementById('pgA').value) || 1;
+            const b = parseFloat(document.getElementById('pgB').value) || 0;
+            const c = parseFloat(document.getElementById('pgC').value) || 0;
+
+            pgRenderer.setParams(a, b, c);
+            const calc = calcQuadratic(a, b, c);
+
+            document.getElementById('pgEqDisplay').textContent = calc.formattedEq;
+            document.getElementById('pgSummary').innerHTML = `
+                <div>Diskriminan (D): ${calc.D.toFixed(2)}</div>
+                <div>Titik Puncak: (${calc.h.toFixed(2)}, ${calc.k.toFixed(2)})</div>
+                <div>Akar: ${calc.hasRealRoots ? calc.roots.map(r => r.toFixed(2)).join(' & ') : 'Tidak ada akar real'}</div>
+                <div>Sumbu Simetri: x = ${calc.h.toFixed(2)}</div>
+            `;
+        }
+
+        function pgRandomize() {
+            document.getElementById('pgA').value = (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 3) + 1);
+            document.getElementById('pgB').value = Math.floor(Math.random() * 8) - 4;
+            document.getElementById('pgC').value = Math.floor(Math.random() * 8) - 4;
+            updatePg();
+        }
+
+        window.onload = function() {
+            navigateTo('cover');
+            updateNavigationUI();
+        };
+    </script>
+</body>
+</html>
